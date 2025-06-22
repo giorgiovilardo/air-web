@@ -42,10 +42,7 @@ Content Management
 - Implement content collections for organized content management.
 
 Styling
-- Use Astro's scoped styling with <style> tags in .astro files.
-- Leverage global styles when necessary, importing them in layouts.
-- Utilize CSS preprocessing with Sass or Less if required.
-- Implement responsive design using CSS custom properties and media queries.
+- Use TailwindCSS if possible, otherwise use Astro's scoped styling with <style> tags in .astro files.
 
 Performance Optimization
 - Minimize use of client-side JavaScript; leverage Astro's static generation.
@@ -72,26 +69,11 @@ Integrations and Plugins
 - Implement proper configuration for integrations in astro.config.mjs.
 - Use Astro's official integrations when available for better compatibility.
 
-Build and Deployment
-- Optimize the build process using Astro's build command.
-- Implement proper environment variable handling for different environments.
-- Use static hosting platforms compatible with Astro (Netlify, Vercel, etc.).
-- Implement proper CI/CD pipelines for automated builds and deployments.
-
-Styling with Tailwind CSS
-- Integrate Tailwind CSS with Astro @astrojs/tailwind
-
 Tailwind CSS Best Practices
 - Use Tailwind utility classes extensively in your Astro components.
-- Leverage Tailwind's responsive design utilities (sm:, md:, lg:, etc.).
 - Utilize Tailwind's color palette and spacing scale for consistency.
 - Implement custom theme extensions in tailwind.config.cjs when necessary.
 - Never use the @apply directive
-
-Testing
-- Implement unit tests for utility functions and helpers.
-- Use end-to-end testing tools like Cypress for testing the built site.
-- Implement visual regression testing if applicable.
 
 Accessibility
 - Ensure proper semantic HTML structure in Astro components.
