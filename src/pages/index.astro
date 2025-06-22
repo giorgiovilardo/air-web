@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import ColumnContainer from "../components/ColumnContainer.astro";
 import Header from "../components/Header.astro";
 import SurveyCTA from "../components/SurveyCTA.astro";
 import SurveyDescription from "../components/SurveyDescription.astro";
@@ -17,6 +18,10 @@ import SurveyDescription from "../components/SurveyDescription.astro";
 		<Header />
 		<SurveyDescription />
 		<SurveyCTA />
+		<ColumnContainer>
+		<div>Content for first column (1fr)</div>
+  <div>Content for second column (2fr)</div>
+		</ColumnContainer>
 	</body>
 </html>
 
