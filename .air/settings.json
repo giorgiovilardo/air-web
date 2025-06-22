@@ -1,0 +1,6 @@
+{
+    "excluded": [
+        "node_modules/",
+        ".vscode/"
+    ]
+}
