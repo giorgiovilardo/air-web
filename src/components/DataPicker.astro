@@ -12,8 +12,15 @@
 
   <div id="data-display" class="data-display hidden">
     <!-- Data will be displayed here -->
+    <div id="salary-visualization" class="visualization-container">
+      <div id="chart-container" class="chart-container">
+        <svg id="salary-chart"></svg>
+      </div>
+      <div id="chart-legend" class="legend-container"></div>
+    </div>
   </div>
 
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
   let calculatorData = {};
 
@@ -77,32 +84,273 @@
         groupedData[entry.category].push(entry);
       });
 
-      let html = `<h3>Salary Data: ${language} in ${country}</h3>`;
-      Object.keys(groupedData).sort().forEach(category => {
-        const entries = groupedData[category];
-        const salaries = entries.map(e => e.value).sort((a, b) => a - b);
-        const min = Math.min(...salaries);
-        const max = Math.max(...salaries);
-        const avg = Math.round(salaries.reduce((sum, val) => sum + val, 0) / salaries.length);
-
-        html += `
-          <div class="experience-group">
-            <h4>${category}</h4>
-            <div class="salary-stats">
-              <span class="stat">Min: $${min}K</span>
-              <span class="stat">Avg: $${avg}K</span>
-              <span class="stat">Max: $${max}K</span>
-              <span class="stat">Entries: ${entries.length}</span>
-            </div>
-          </div>
-        `;
-      });
+      let html = `
+        <h2>Coding specialists from <span class="highlight">${country}</span> who use <span class="highlight">${language}</span> reported to have the following gross annual salaries (in USD including bonuses) in 2024:</h2>
+      `;
 
       dataDisplay.innerHTML = html;
       dataDisplay.classList.remove('hidden');
+
+      // Create visualization
+      createSalaryVisualization(data, country, language);
     } else {
       dataDisplay.classList.add('hidden');
     }
+  }
+
+  // Create D3.js salary visualization
+  function createSalaryVisualization(data, country, language) {
+    console.log('Creating visualization with data:', data);
+    
+    // Wait for DOM elements to be ready
+    setTimeout(() => {
+      try {
+        // Clear existing visualization
+        d3.select("#salary-chart").selectAll("*").remove();
+        d3.select("#chart-legend").selectAll("*").remove();
+
+        // Check if elements exist
+        const chartElement = document.getElementById('salary-chart');
+        const legendElement = document.getElementById('chart-legend');
+        
+        if (!chartElement || !legendElement) {
+          console.error('Chart elements not found');
+          return;
+        }
+
+        console.log('Chart elements found, proceeding with visualization');
+
+        // Simplified experience levels to reduce clutter
+        const experienceMapping = {
+          "<1 year": "0-1 years",
+          "1–2 years": "1-2 years", 
+          "3–5 years": "3-5 years",
+          "6–10 years": "6-10 years",
+          "11–15 years": "11-15 years",
+          "16–20 years": "16-20 years",
+          ">20 years": "20+ years"
+        };
+
+        // Process and group data
+        const groupedData = {};
+        
+        data.entries.forEach(entry => {
+          const mappedExp = experienceMapping[entry.category] || entry.category;
+          if (!groupedData[mappedExp]) {
+            groupedData[mappedExp] = [];
+          }
+          groupedData[mappedExp].push({
+            experience: mappedExp,
+            salary: entry.value * 1000 // Convert to actual dollars
+          });
+        });
+
+        // Convert to array and sort by experience
+        const experienceOrder = ["0-1 years", "1-2 years", "3-5 years", "6-10 years", "11-15 years", "16-20 years", "20+ years"];
+        const finalData = [];
+        
+        experienceOrder.forEach(exp => {
+          if (groupedData[exp]) {
+            groupedData[exp].forEach(item => {
+              finalData.push(item);
+            });
+          }
+        });
+
+        const experienceLevels = experienceOrder.filter(exp => groupedData[exp]);
+
+        console.log('Processed data:', finalData);
+        console.log('Experience levels:', experienceLevels);
+
+        if (finalData.length === 0) {
+          console.log('No data to visualize');
+          return;
+        }
+
+        // Set up dimensions
+        const margin = { top: 40, right: 200, bottom: 60, left: 120 };
+        const width = 800 - margin.left - margin.right;
+        const height = Math.max(300, experienceLevels.length * 80) - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select("#salary-chart")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Create scales
+        const maxSalary = d3.max(finalData, d => d.salary);
+        const paddedMax = Math.ceil(maxSalary / 10000) * 10000;
+
+        const xScale = d3.scaleLinear()
+          .domain([0, paddedMax])
+          .range([0, width]);
+
+        const yScale = d3.scaleBand()
+          .domain(experienceLevels)
+          .range([0, height])
+          .padding(0.2);
+
+        const colorScale = d3.scaleOrdinal()
+          .domain(experienceLevels)
+          .range(d3.schemeCategory10);
+
+        console.log('Scales created');
+
+        // Draw axes
+        const xAxis = svg.append("g")
+          .attr("class", "x-axis")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(xScale).tickFormat(d => `$${d3.format(",.0f")(d)}`));
+
+        xAxis.selectAll("text")
+          .style("fill", "#ffffff")
+          .style("font-size", "12px");
+
+        const yAxis = svg.append("g")
+          .attr("class", "y-axis")
+          .call(d3.axisLeft(yScale));
+
+        yAxis.selectAll("text")
+          .style("fill", "#ffffff")
+          .style("font-size", "12px");
+
+        // Style axes
+        svg.selectAll(".x-axis line, .y-axis line, .x-axis path, .y-axis path")
+          .style("stroke", "#666");
+
+        // Add axis labels
+        svg.append("text")
+          .attr("transform", `translate(${width / 2}, ${height + 50})`)
+          .style("text-anchor", "middle")
+          .style("fill", "#ffffff")
+          .style("font-size", "14px")
+          .text("Annual Salary ($)");
+
+        svg.append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 0 - margin.left)
+          .attr("x", 0 - (height / 2))
+          .attr("dy", "1em")
+          .style("text-anchor", "middle")
+          .style("fill", "#ffffff")
+          .style("font-size", "14px")
+          .text("Years of Experience");
+
+        // Add title
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("fill", "#ffffff")
+          .style("font-size", "16px")
+          .style("font-weight", "bold")
+          .text(`${language} Salaries in ${country}`);
+
+        // Draw horizontal lines for each experience level
+        svg.selectAll(".experience-line")
+          .data(experienceLevels)
+          .enter()
+          .append("line")
+          .attr("class", "experience-line")
+          .attr("x1", 0)
+          .attr("x2", width)
+          .attr("y1", d => yScale(d) + yScale.bandwidth() / 2)
+          .attr("y2", d => yScale(d) + yScale.bandwidth() / 2)
+          .style("stroke", "#333")
+          .style("stroke-width", 1)
+          .style("opacity", 0.3);
+
+        console.log('Drawing dots');
+
+        // Draw dots
+        svg.selectAll(".data-point")
+          .data(finalData)
+          .enter()
+          .append("circle")
+          .attr("class", "data-point")
+          .attr("cx", d => xScale(d.salary))
+          .attr("cy", d => yScale(d.experience) + yScale.bandwidth() / 2)
+          .attr("r", 4)
+          .style("fill", d => colorScale(d.experience))
+          .style("opacity", 0.8)
+          .style("stroke", "#ffffff")
+          .style("stroke-width", 1)
+          .on("mouseover", function(event, d) {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr("r", 6)
+              .style("opacity", 1);
+
+            // Tooltip
+            const tooltip = d3.select("body")
+              .append("div")
+              .attr("class", "salary-tooltip")
+              .style("position", "absolute")
+              .style("background", "rgba(0, 0, 0, 0.9)")
+              .style("color", "#ffffff")
+              .style("padding", "10px")
+              .style("border-radius", "5px")
+              .style("font-size", "12px")
+              .style("pointer-events", "none")
+              .style("z-index", "1000")
+              .html(`<strong>Experience:</strong> ${d.experience}<br/><strong>Salary:</strong> $${d3.format(",.0f")(d.salary)}`)
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 10) + "px");
+          })
+          .on("mouseout", function(event, d) {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr("r", 4)
+              .style("opacity", 0.8);
+
+            d3.selectAll(".salary-tooltip").remove();
+          });
+
+        console.log('Creating legend');
+
+        // Create legend
+        const legend = d3.select("#chart-legend")
+          .append("div")
+          .style("padding", "20px")
+          .style("background", "#2a2a2d")
+          .style("border-radius", "12px")
+          .style("color", "#ffffff");
+
+        legend.append("h4")
+          .text("Experience Levels")
+          .style("margin-top", "0")
+          .style("margin-bottom", "15px")
+          .style("color", "#ffffff");
+
+        const legendItems = legend.selectAll(".legend-item")
+          .data(experienceLevels)
+          .enter()
+          .append("div")
+          .style("display", "flex")
+          .style("align-items", "center")
+          .style("margin-bottom", "8px");
+
+        legendItems.append("div")
+          .style("width", "12px")
+          .style("height", "12px")
+          .style("border-radius", "50%")
+          .style("margin-right", "8px")
+          .style("background-color", d => colorScale(d));
+
+        legendItems.append("span")
+          .text(d => d)
+          .style("font-size", "12px");
+
+        console.log('Visualization completed');
+
+      } catch (error) {
+        console.error('Error creating visualization:', error);
+      }
+    }, 100); // Small delay to ensure DOM is ready
   }
 
   // Event listeners
@@ -184,9 +432,38 @@
     max-width: 100%;
     overflow-wrap: break-word;
     word-wrap: break-word;
+    color: #000;
   }
 
   .data-display.hidden {
     display: none;
+  }
+
+  .visualization-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-top: 2rem;
+  }
+
+  .chart-container {
+    flex: 1;
+  }
+
+  .legend-container {
+    min-width: 180px;
+  }
+</style>
+
+<style is:global>
+  h2 {
+    font-size: 56px;
+    color: #000;
+    margin-top: 0;
+    font-weight: normal;
+  }
+
+  .highlight {
+    color: #6B57FF;
   }
 </style>
