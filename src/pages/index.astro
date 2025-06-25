@@ -1,6 +1,8 @@
 ---
 import "../styles/global.css";
+import Card from "../components/Card.astro";
 import ColumnContainer from "../components/ColumnContainer.astro";
+import DataPicker from "../components/DataPicker.astro";
 import Header from "../components/Header.astro";
 import SurveyCTA from "../components/SurveyCTA.astro";
 import SurveyDescription from "../components/SurveyDescription.astro";
@@ -19,8 +21,9 @@ import SurveyDescription from "../components/SurveyDescription.astro";
 		<SurveyDescription />
 		<SurveyCTA />
 		<ColumnContainer>
-		<div>Content for first column (1fr)</div>
-  <div>Content for second column (2fr)</div>
+			<Card headerText="1" paragraphText="Enter your programming language, and country." />
+			<Card headerText="2" paragraphText="Calculate the salary range based on your parameters." />
+			<DataPicker />
 		</ColumnContainer>
 	</body>
 </html>

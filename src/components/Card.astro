@@ -1,0 +1,29 @@
+---
+const { headerText, paragraphText } = Astro.props;
+---
+
+<div class="card-header">
+  <h1>{headerText}</h1>
+  <p>{paragraphText}</p>
+</div>
+<style>
+  .card-header {
+    background: linear-gradient(180deg, #6B57FF 0%, rgba(107, 87, 255, 0) 100%);
+    border-radius: 24px 24px 0px 0px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+    gap: 8px;
+  }
+
+  h1 {
+    font-size: 55px;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    font-size: 24px;
+  }
+</style>

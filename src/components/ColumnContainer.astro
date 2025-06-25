@@ -5,7 +5,9 @@
 <style>
   .column-container {
     display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
+    grid-template-columns: minmax(300px, 1fr) minmax(600px, 2fr);
+    grid-template-rows: min-content;
+    gap: 0 2rem;
+    align-items: start;
   }
 </style>

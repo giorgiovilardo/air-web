@@ -1,0 +1,192 @@
+  <div class="picker">
+    <label for="country-select">Country</label>
+    <select id="country-select">
+      <option value="">Select a country</option>
+    </select>
+
+    <label for="language-select">Programming Language</label>
+    <select id="language-select" disabled>
+      <option value="">Select a programming language</option>
+    </select>
+  </div>
+
+  <div id="data-display" class="data-display hidden">
+    <!-- Data will be displayed here -->
+  </div>
+
+<script>
+  let calculatorData = {};
+
+  // Load the calculator data
+  async function loadData() {
+    try {
+      const response = await fetch('/calculatorData.json');
+      calculatorData = await response.json();
+      populateCountrySelect();
+    } catch (error) {
+      console.error('Error loading calculator data:', error);
+    }
+  }
+
+  // Populate country select
+  function populateCountrySelect() {
+    const countrySelect = document.getElementById('country-select');
+    const countries = Object.keys(calculatorData).sort();
+
+    countries.forEach(country => {
+      const option = document.createElement('option');
+      option.value = country;
+      option.textContent = country;
+      countrySelect.appendChild(option);
+    });
+  }
+
+  // Populate language select based on selected country
+  function populateLanguageSelect(selectedCountry) {
+    const languageSelect = document.getElementById('language-select');
+    languageSelect.innerHTML = '<option value="">Select a programming language</option>';
+
+    if (selectedCountry && calculatorData[selectedCountry]) {
+      const languages = Object.keys(calculatorData[selectedCountry]).sort();
+      languageSelect.disabled = false;
+
+      languages.forEach(language => {
+        const option = document.createElement('option');
+        option.value = language;
+        option.textContent = language;
+        languageSelect.appendChild(option);
+      });
+    } else {
+      languageSelect.disabled = true;
+    }
+  }
+
+  // Display data for selected country and language
+  function displayData(country, language) {
+    const dataDisplay = document.getElementById('data-display');
+
+    if (country && language && calculatorData[country] && calculatorData[country][language]) {
+      const data = calculatorData[country][language];
+
+      // Group entries by category (experience level)
+      const groupedData = {};
+      data.entries.forEach(entry => {
+        if (!groupedData[entry.category]) {
+          groupedData[entry.category] = [];
+        }
+        groupedData[entry.category].push(entry);
+      });
+
+      let html = `<h3>Salary Data: ${language} in ${country}</h3>`;
+      Object.keys(groupedData).sort().forEach(category => {
+        const entries = groupedData[category];
+        const salaries = entries.map(e => e.value).sort((a, b) => a - b);
+        const min = Math.min(...salaries);
+        const max = Math.max(...salaries);
+        const avg = Math.round(salaries.reduce((sum, val) => sum + val, 0) / salaries.length);
+
+        html += `
+          <div class="experience-group">
+            <h4>${category}</h4>
+            <div class="salary-stats">
+              <span class="stat">Min: $${min}K</span>
+              <span class="stat">Avg: $${avg}K</span>
+              <span class="stat">Max: $${max}K</span>
+              <span class="stat">Entries: ${entries.length}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      dataDisplay.innerHTML = html;
+      dataDisplay.classList.remove('hidden');
+    } else {
+      dataDisplay.classList.add('hidden');
+    }
+  }
+
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+
+    const countrySelect = document.getElementById('country-select');
+    const languageSelect = document.getElementById('language-select');
+
+    countrySelect.addEventListener('change', (e) => {
+      const selectedCountry = e.target.value;
+      populateLanguageSelect(selectedCountry);
+      displayData(selectedCountry, languageSelect.value);
+    });
+
+    languageSelect.addEventListener('change', (e) => {
+      const selectedLanguage = e.target.value;
+      displayData(countrySelect.value, selectedLanguage);
+    });
+  });
+</script>
+
+<style>
+  .picker {
+    background: #19191C;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+    gap: 1.5rem;
+    margin-top: -1.5rem;
+    max-width: 100%;
+  }
+
+  label {
+    font-size: 18px;
+    color: #ffffff;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  select {
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #2a2a2d;
+    color: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  select:hover:not(:disabled) {
+    border-color: #555;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: #007acc;
+  }
+
+  select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .data-display {
+    background: #fff;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+    gap: 1.5rem;
+    margin-top: -1.5rem;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  .data-display.hidden {
+    display: none;
+  }
+</style>
