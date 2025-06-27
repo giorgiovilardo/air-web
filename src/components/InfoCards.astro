@@ -24,6 +24,9 @@ for (const country in calculatorData) {
 }
 
 const programmingLanguages = Array.from(languages).sort() as string[];
+
+// Serialize calculator data for client-side use
+const calculatorDataJson = JSON.stringify(calculatorData);
 ---
 
 <div class="info-cards">
@@ -51,8 +54,12 @@ const programmingLanguages = Array.from(languages).sort() as string[];
     <div class="card-text">
       Coding specialists from <span id="selected-country" class="highlight">Brazil</span> who use <span id="selected-language" class="highlight">C / C++</span> reported to have the following gross annual salaries (in USD including bonuses) in 2024:
     </div>
+    <div id="salary-chart" class="chart-container"></div>
   </div>
 </div>
+
+<!-- Hidden element to store calculator data for client-side access -->
+<div id="calculator-data" data-json={calculatorDataJson} style="display: none;"></div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -60,6 +67,22 @@ const programmingLanguages = Array.from(languages).sort() as string[];
     const languageSelect = document.getElementById('programming-language') as HTMLSelectElement;
     const selectedCountry = document.getElementById('selected-country');
     const selectedLanguage = document.getElementById('selected-language');
+    const chartContainer = document.getElementById('salary-chart');
+
+    // Access the calculator data from the hidden element
+    let calculatorData;
+    try {
+      const dataElement = document.getElementById('calculator-data');
+      if (dataElement && dataElement.getAttribute('data-json')) {
+        calculatorData = JSON.parse(dataElement.getAttribute('data-json') || '{}');
+      } else {
+        console.error('Calculator data not found');
+        calculatorData = {};
+      }
+    } catch (error) {
+      console.error('Error parsing calculator data:', error);
+      calculatorData = {};
+    }
 
     // Set initial values
     if (selectedCountry && countrySelect) {
@@ -70,16 +93,116 @@ const programmingLanguages = Array.from(languages).sort() as string[];
       selectedLanguage.textContent = languageSelect.value;
     }
 
+    // Function to render the salary chart
+    function renderSalaryChart(country: string, language: string) {
+      if (!chartContainer || !calculatorData[country] || !calculatorData[country][language]) return;
+
+      // Clear previous chart
+      chartContainer.innerHTML = '';
+
+      const data = calculatorData[country][language];
+      const entries = data.entries;
+      const yGroups = data.yGroups; // Experience levels
+
+      // Create SVG element
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '400');
+      svg.setAttribute('viewBox', '0 0 800 400');
+      chartContainer.appendChild(svg);
+
+      // Create axes
+      const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      xAxis.setAttribute('x1', '50');
+      xAxis.setAttribute('y1', '350');
+      xAxis.setAttribute('x2', '750');
+      xAxis.setAttribute('y2', '350');
+      xAxis.setAttribute('stroke', '#333');
+      xAxis.setAttribute('stroke-width', '2');
+      svg.appendChild(xAxis);
+
+      const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      yAxis.setAttribute('x1', '50');
+      yAxis.setAttribute('y1', '50');
+      yAxis.setAttribute('x2', '50');
+      yAxis.setAttribute('y2', '350');
+      yAxis.setAttribute('stroke', '#333');
+      yAxis.setAttribute('stroke-width', '2');
+      svg.appendChild(yAxis);
+
+      // Add x-axis labels (salary values)
+      const salaryLabels = ['0', '100K', '200K', '300K', '400K'];
+      salaryLabels.forEach((label, index) => {
+        const x = 50 + (index * 175);
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', x.toString());
+        text.setAttribute('y', '380');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '14');
+        text.textContent = label;
+        svg.appendChild(text);
+      });
+
+      // Add y-axis labels (experience levels)
+      yGroups.forEach((group, index) => {
+        const y = 350 - ((index + 1) * (300 / yGroups.length));
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', '40');
+        text.setAttribute('y', y.toString());
+        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('font-size', '14');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.textContent = group;
+        svg.appendChild(text);
+      });
+
+      // Plot data points
+      entries.forEach(entry => {
+        const value = entry.value; // Salary in thousands
+        const category = entry.category; // Experience level
+
+        // Calculate position
+        const x = 50 + (value / 400 * 700); // Scale to fit within 0-400K range
+        const yIndex = yGroups.indexOf(category);
+        const y = 350 - ((yIndex + 1) * (300 / yGroups.length));
+
+        // Create dot
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', x.toString());
+        dot.setAttribute('cy', y.toString());
+        dot.setAttribute('r', '5');
+        dot.setAttribute('fill', '#6b57ff');
+
+        // Add tooltip with salary info
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        title.textContent = `${category}, $${value}K`;
+        dot.appendChild(title);
+
+        svg.appendChild(dot);
+      });
+    }
+
+    // Initial render
+    if (countrySelect && languageSelect) {
+      renderSalaryChart(countrySelect.value, languageSelect.value);
+    }
+
     // Update when selections change
     countrySelect?.addEventListener('change', () => {
       if (selectedCountry) {
         selectedCountry.textContent = countrySelect.value;
+      }
+      if (languageSelect) {
+        renderSalaryChart(countrySelect.value, languageSelect.value);
       }
     });
 
     languageSelect?.addEventListener('change', () => {
       if (selectedLanguage) {
         selectedLanguage.textContent = languageSelect.value;
+      }
+      if (countrySelect) {
+        renderSalaryChart(countrySelect.value, languageSelect.value);
       }
     });
   });
@@ -113,6 +236,7 @@ const programmingLanguages = Array.from(languages).sort() as string[];
   .card-text {
     font-size: 2rem;
     line-height: 1.5;
+    margin-bottom: 1.5rem;
   }
 
   .dark .card-text {
@@ -145,5 +269,29 @@ const programmingLanguages = Array.from(languages).sort() as string[];
   .highlight {
     color: #6b57ff;
     font-weight: 500;
+  }
+
+  .chart-container {
+    width: 100%;
+    height: 400px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  /* SVG styles */
+  svg {
+    font-family: sans-serif;
+  }
+
+  svg text {
+    fill: #333;
+  }
+
+  svg circle:hover {
+    fill: #4a3bcc;
+    r: 7;
+    transition: all 0.2s ease;
+    cursor: pointer;
   }
 </style>
