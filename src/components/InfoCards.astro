@@ -2,16 +2,28 @@
 // Fetch calculator data
 import calculatorData from '../../public/calculatorData.json';
 
+// Define the type for calculator data
+interface CalculatorData {
+  [country: string]: {
+    [language: string]: {
+      entries: any[];
+      yGroups: string[];
+      xRangeGroups: number[][];
+      xRange: string[];
+    }
+  }
+}
+
 // Extract unique countries and languages
-const countries = Object.keys(calculatorData).sort();
+const countries = Object.keys(calculatorData).sort() as string[];
 const languages = new Set();
 
 // Get all unique programming languages
 for (const country in calculatorData) {
-  Object.keys(calculatorData[country]).forEach(lang => languages.add(lang));
+  Object.keys((calculatorData as CalculatorData)[country]).forEach(lang => languages.add(lang));
 }
 
-const programmingLanguages = Array.from(languages).sort();
+const programmingLanguages = Array.from(languages).sort() as string[];
 ---
 
 <div class="info-cards">
@@ -44,22 +56,31 @@ const programmingLanguages = Array.from(languages).sort();
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const countrySelect = document.getElementById('country');
-    const languageSelect = document.getElementById('programming-language');
+    const countrySelect = document.getElementById('country') as HTMLSelectElement;
+    const languageSelect = document.getElementById('programming-language') as HTMLSelectElement;
     const selectedCountry = document.getElementById('selected-country');
     const selectedLanguage = document.getElementById('selected-language');
 
     // Set initial values
-    selectedCountry.textContent = countrySelect.value;
-    selectedLanguage.textContent = languageSelect.value;
+    if (selectedCountry && countrySelect) {
+      selectedCountry.textContent = countrySelect.value;
+    }
+
+    if (selectedLanguage && languageSelect) {
+      selectedLanguage.textContent = languageSelect.value;
+    }
 
     // Update when selections change
-    countrySelect.addEventListener('change', () => {
-      selectedCountry.textContent = countrySelect.value;
+    countrySelect?.addEventListener('change', () => {
+      if (selectedCountry) {
+        selectedCountry.textContent = countrySelect.value;
+      }
     });
 
-    languageSelect.addEventListener('change', () => {
-      selectedLanguage.textContent = languageSelect.value;
+    languageSelect?.addEventListener('change', () => {
+      if (selectedLanguage) {
+        selectedLanguage.textContent = languageSelect.value;
+      }
     });
   });
 </script>
@@ -90,7 +111,7 @@ const programmingLanguages = Array.from(languages).sort();
   }
 
   .card-text {
-    font-size: 1.4rem;
+    font-size: 2rem;
     line-height: 1.5;
   }
 
