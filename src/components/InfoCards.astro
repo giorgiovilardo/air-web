@@ -104,6 +104,11 @@ const calculatorDataJson = JSON.stringify(calculatorData);
       const entries = data.entries;
       const yGroups = data.yGroups; // Experience levels
 
+      // Find the maximum salary value
+      const maxSalary = Math.max(...entries.map(entry => entry.value));
+      // Round up to the nearest 100K for a clean scale
+      const roundedMaxSalary = Math.ceil(maxSalary / 100) * 100;
+
       // Create SVG element
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('width', '100%');
@@ -130,55 +135,109 @@ const calculatorDataJson = JSON.stringify(calculatorData);
       yAxis.setAttribute('stroke-width', '2');
       svg.appendChild(yAxis);
 
-      // Add x-axis labels (salary values)
-      const salaryLabels = ['0', '100K', '200K', '300K', '400K'];
-      salaryLabels.forEach((label, index) => {
-        const x = 50 + (index * 175);
+      // Add right y-axis
+      const rightYAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      rightYAxis.setAttribute('x1', '750');
+      rightYAxis.setAttribute('y1', '50');
+      rightYAxis.setAttribute('x2', '750');
+      rightYAxis.setAttribute('y2', '350');
+      rightYAxis.setAttribute('stroke', '#333');
+      rightYAxis.setAttribute('stroke-width', '2');
+      svg.appendChild(rightYAxis);
+
+      // Add x-axis labels (salary values) - dynamically calculated
+      const numLabels = 5;
+      const labelStep = roundedMaxSalary / (numLabels - 1);
+
+      for (let i = 0; i < numLabels; i++) {
+        const value = i * labelStep;
+        const x = 50 + (i * (700 / (numLabels - 1)));
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', x.toString());
         text.setAttribute('y', '380');
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('font-size', '14');
-        text.textContent = label;
+        text.textContent = value === 0 ? '0' : `${value}K`;
         svg.appendChild(text);
-      });
+      }
 
-      // Add y-axis labels (experience levels)
+      // Add y-axis labels on the right side (experience levels)
       yGroups.forEach((group, index) => {
         const y = 350 - ((index + 1) * (300 / yGroups.length));
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', '40');
+        text.setAttribute('x', '760');
         text.setAttribute('y', y.toString());
-        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('text-anchor', 'start');
         text.setAttribute('font-size', '14');
         text.setAttribute('dominant-baseline', 'middle');
         text.textContent = group;
         svg.appendChild(text);
       });
 
-      // Plot data points
-      entries.forEach(entry => {
-        const value = entry.value; // Salary in thousands
-        const category = entry.category; // Experience level
+      // Group entries by category (experience level)
+      const entriesByCategory = {};
+      yGroups.forEach(group => {
+        entriesByCategory[group] = [];
+      });
 
-        // Calculate position
-        const x = 50 + (value / 400 * 700); // Scale to fit within 0-400K range
+      entries.forEach(entry => {
+        if (entriesByCategory[entry.category]) {
+          entriesByCategory[entry.category].push(entry);
+        }
+      });
+
+      // Sort entries within each category by value
+      Object.keys(entriesByCategory).forEach(category => {
+        entriesByCategory[category].sort((a, b) => a.value - b.value);
+      });
+
+      // Plot data points and connect with lines
+      Object.keys(entriesByCategory).forEach(category => {
+        const categoryEntries = entriesByCategory[category];
         const yIndex = yGroups.indexOf(category);
         const y = 350 - ((yIndex + 1) * (300 / yGroups.length));
 
-        // Create dot
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', x.toString());
-        dot.setAttribute('cy', y.toString());
-        dot.setAttribute('r', '5');
-        dot.setAttribute('fill', '#6b57ff');
+        // Create a path for the line
+        if (categoryEntries.length > 1) {
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          let pathData = 'M';
 
-        // Add tooltip with salary info
-        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-        title.textContent = `${category}, $${value}K`;
-        dot.appendChild(title);
+          categoryEntries.forEach((entry, index) => {
+            const x = 50 + (entry.value / roundedMaxSalary * 700);
+            pathData += `${x},${y} `;
+            if (index < categoryEntries.length - 1) {
+              pathData += 'L';
+            }
+          });
 
-        svg.appendChild(dot);
+          path.setAttribute('d', pathData);
+          path.setAttribute('stroke', '#6b57ff');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('fill', 'none');
+          svg.appendChild(path);
+        }
+
+        // Add dots on top of the line
+        categoryEntries.forEach(entry => {
+          const value = entry.value; // Salary in thousands
+
+          // Calculate position
+          const x = 50 + (value / roundedMaxSalary * 700); // Scale dynamically
+
+          // Create dot
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('cx', x.toString());
+          dot.setAttribute('cy', y.toString());
+          dot.setAttribute('r', '5');
+          dot.setAttribute('fill', '#6b57ff');
+
+          // Add tooltip with salary info
+          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          title.textContent = `${category}, $${value}K`;
+          dot.appendChild(title);
+
+          svg.appendChild(dot);
+        });
       });
     }
 
@@ -274,7 +333,7 @@ const calculatorDataJson = JSON.stringify(calculatorData);
   .chart-container {
     width: 100%;
     height: 400px;
-    background-color: #f9f9f9;
+    background-color: white;
     border-radius: 8px;
     overflow: hidden;
   }
