@@ -1,0 +1,48 @@
+<div class="step-cards">
+  <div class="card">
+    <div class="card-number">1</div>
+    <div class="card-text">Enter your programming language, and country.</div>
+  </div>
+  <div class="card">
+    <div class="card-number">2</div>
+    <div class="card-text">Calculate the salary range based on your parameters.</div>
+  </div>
+</div>
+
+<style>
+  .step-cards {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+    width: 100%;
+  }
+
+  .card {
+    padding: 1.5rem;
+    background: linear-gradient(180deg, #6b57ff, rgba(107, 87, 255, 0));
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card:first-child {
+    flex: 1;
+  }
+
+  .card:last-child {
+    flex: 2.5;
+  }
+
+  .card-number {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: white;
+  }
+
+  .card-text {
+    font-size: 1.6rem;
+    line-height: 1.5;
+    color: white;
+  }
+</style>
