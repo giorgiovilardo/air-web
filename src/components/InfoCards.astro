@@ -145,9 +145,38 @@ const calculatorDataJson = JSON.stringify(calculatorData);
       rightYAxis.setAttribute('stroke-width', '2');
       svg.appendChild(rightYAxis);
 
-      // Add x-axis labels (salary values) - dynamically calculated
+      // Define number of labels for x-axis
       const numLabels = 5;
       const labelStep = roundedMaxSalary / (numLabels - 1);
+
+      // Add grid lines
+      // Horizontal grid lines
+      yGroups.forEach((group, index) => {
+        const y = 350 - ((index + 1) * (300 / yGroups.length));
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', '50');
+        gridLine.setAttribute('y1', y.toString());
+        gridLine.setAttribute('x2', '750');
+        gridLine.setAttribute('y2', y.toString());
+        gridLine.setAttribute('stroke', '#dddddd');
+        gridLine.setAttribute('stroke-width', '1');
+        svg.appendChild(gridLine);
+      });
+
+      // Vertical grid lines
+      for (let i = 0; i < numLabels; i++) {
+        const x = 50 + (i * (700 / (numLabels - 1)));
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', x.toString());
+        gridLine.setAttribute('y1', '50');
+        gridLine.setAttribute('x2', x.toString());
+        gridLine.setAttribute('y2', '350');
+        gridLine.setAttribute('stroke', '#dddddd');
+        gridLine.setAttribute('stroke-width', '1');
+        svg.appendChild(gridLine);
+      }
+
+      // Add x-axis labels (salary values) - dynamically calculated
 
       for (let i = 0; i < numLabels; i++) {
         const value = i * labelStep;
@@ -230,11 +259,54 @@ const calculatorDataJson = JSON.stringify(calculatorData);
           dot.setAttribute('cy', y.toString());
           dot.setAttribute('r', '5');
           dot.setAttribute('fill', '#6b57ff');
+          dot.setAttribute('data-experience', category);
+          dot.setAttribute('data-salary', value.toString());
+          dot.setAttribute('data-country', country);
+          dot.setAttribute('data-language', language);
 
-          // Add tooltip with salary info
+          // Add basic tooltip for accessibility
           const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
           title.textContent = `${category}, $${value}K`;
           dot.appendChild(title);
+
+          // Add hover event listeners
+          dot.addEventListener('mouseenter', (e) => {
+            const target = e.target as SVGCircleElement;
+            const experience = target.getAttribute('data-experience');
+            const salary = target.getAttribute('data-salary');
+            const country = target.getAttribute('data-country');
+            const language = target.getAttribute('data-language');
+
+            // Create tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'salary-tooltip';
+            tooltip.innerHTML = `
+              <div class="tooltip-header">${experience}</div>
+              <div class="tooltip-content">
+                <div><strong>Salary:</strong> $${salary}K</div>
+                <div><strong>Country:</strong> ${country}</div>
+                <div><strong>Language:</strong> ${language}</div>
+              </div>
+            `;
+
+            // Position tooltip near the dot
+            const svgRect = svg.getBoundingClientRect();
+            const dotRect = target.getBoundingClientRect();
+
+            tooltip.style.left = `${dotRect.left - svgRect.left + 10}px`;
+            tooltip.style.top = `${dotRect.top - svgRect.top - 10}px`;
+
+            // Add tooltip to chart container
+            chartContainer.appendChild(tooltip);
+          });
+
+          dot.addEventListener('mouseleave', () => {
+            // Remove tooltip when mouse leaves
+            const tooltip = chartContainer.querySelector('.salary-tooltip');
+            if (tooltip) {
+              tooltip.remove();
+            }
+          });
 
           svg.appendChild(dot);
         });
@@ -352,5 +424,39 @@ const calculatorDataJson = JSON.stringify(calculatorData);
     r: 7;
     transition: all 0.2s ease;
     cursor: pointer;
+  }
+
+  /* Tooltip styles */
+  .salary-tooltip {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    z-index: 100;
+    pointer-events: none;
+    min-width: 180px;
+  }
+
+  .tooltip-header {
+    background-color: #6b57ff;
+    color: white;
+    padding: 6px 10px;
+    font-weight: bold;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .tooltip-content {
+    padding: 8px 10px;
+  }
+
+  .tooltip-content div {
+    margin-bottom: 4px;
+  }
+
+  .tooltip-content div:last-child {
+    margin-bottom: 0;
   }
 </style>
